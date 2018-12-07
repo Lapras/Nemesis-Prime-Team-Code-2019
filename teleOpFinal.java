@@ -17,25 +17,26 @@ public class teleOpFinal extends LinearOpMode {
     private DcMotor leftDrive;
     private DcMotor rightDrive;
     private DcMotor elevatorDrive = null;
-    static final double COUNTS_PER_MOTOR_REV_ELAVATOR = 1440;    // eg: TETRIX Motor Encoder
-    static final double DRIVE_GEAR_REDUCTION_ELAVATOR = 2.0;     // This is < 1.0 if geared UP
-    static final double SPROCKET_TEETH = 20;     // For figuring circumference
-    static final double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV_ELAVATOR * DRIVE_GEAR_REDUCTION_ELAVATOR) /
-            (SPROCKET_TEETH * 3.1415);
+    static final double COUNTS_PER_MOTOR_REV_ELAVATOR = 288;    // eg: TETRIX Motor Encoder
+    static final double DRIVE_GEAR_REDUCTION_ELAVATOR = 72/30;     // This is < 1.0 if geared UP
+    static final double SPROCKET_DIAMETER = 1;     // For figuring circumference
+    static final double COUNTS_PER_INCH_ELEVATOR = (COUNTS_PER_MOTOR_REV_ELAVATOR * DRIVE_GEAR_REDUCTION_ELAVATOR) /
+            (SPROCKET_DIAMETER * 3.14159265358979323);
+    static final double ELAVATOR_SENSETIVITY = 0.1;
     private ElapsedTime runtime = new ElapsedTime();
-    private DigitalChannel digitalTouch = null;
+    //private DigitalChannel digitalTouch = null;
     @Override
     public void runOpMode() {
         leftDrive  = hardwareMap.get(DcMotor.class, "left_drive");
         rightDrive = hardwareMap.get(DcMotor.class, "right_drive");
         elevatorDrive = hardwareMap.get(DcMotor.class, "elevator_drive");
-        digitalTouch = hardwareMap.get(DigitalChannel.class, "sensor_digital");
+      //  digitalTouch = hardwareMap.get(DigitalChannel.class, "sensor_digital");
         leftDrive.setDirection(DcMotor.Direction.FORWARD);
         rightDrive.setDirection(DcMotor.Direction.REVERSE);
         elevatorDrive.setDirection(DcMotor.Direction.FORWARD);
         elevatorDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         elevatorDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        digitalTouch.setMode(DigitalChannel.Mode.INPUT);
+        //digitalTouch.setMode(DigitalChannel.Mode.INPUT);
 
         waitForStart();
         runtime.reset();
@@ -46,18 +47,16 @@ public class teleOpFinal extends LinearOpMode {
             } else {
                 speedlimiter = 0.5;
             }
-            boolean elevatormoveUP = gamepad2.a;
-            boolean elevatormoveDOWN = gamepad2.b;
-            boolean elevatorSTOP = gamepad2.x;
-            if (elevatormoveUP) {
-                elavatorMove(5, 4, 2);
-            } else if (elevatormoveDOWN) {
-                elavatorMove(5,-4,2);
-            } else if (elevatorSTOP) {
+            if (gamepad2.a) {
+                elevatorDrive.setPower(1);
+            } else if (gamepad2.b) {
+                elevatorDrive.setPower(-1);
+            } else {
                 elevatorDrive.setPower(0);
-            } else telemetry.addData("what did you do xD", null);
-            teleopInput(gamepad1.left_stick_y,-gamepad1.right_stick_x,speedlimiter, leftDrive, rightDrive);
-
+            }
+            teleopInput(-gamepad1.left_stick_y,-gamepad1.right_stick_x,speedlimiter, leftDrive, rightDrive);
+            telemetry.addData("elevatorPosition %7d", elevatorDrive.getCurrentPosition());
+            telemetry.update();
         }
     }
     public void teleopInput(double drive, double turn, double speedLimiter, DcMotor leftDrive, DcMotor rightDrive) {
@@ -76,17 +75,17 @@ public class teleOpFinal extends LinearOpMode {
         if (opModeIsActive()) {
 
             // Determine new target position, and pass to motor controller
-            newTarget = elevatorDrive.getCurrentPosition() + (int) (inches * COUNTS_PER_INCH);
+            newTarget = elevatorDrive.getCurrentPosition() + (int) (inches * COUNTS_PER_INCH_ELEVATOR);
             elevatorDrive.setTargetPosition(newTarget);
 
 
             // Turn On RUN_TO_POSITION
 
             elevatorDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            elevatorDrive.setPower(Math.abs(1));
 
             // reset the timeout time and start motion.
             runtime.reset();
-            elevatorDrive.setPower(Math.abs(speed));
 
 
             // keep looping while we are still active, and there is time left, and both motors are running.
@@ -97,11 +96,17 @@ public class teleOpFinal extends LinearOpMode {
             // onto the next step, use (isBusy() || isBusy()) in the loop test.
             while (opModeIsActive() &&
                     (runtime.seconds() < timeoutS) &&
-                    (leftDrive.isBusy() && rightDrive.isBusy())) {
-                if(digitalTouch.getState()){
-                    elevatorDrive.setPower(0);
-                }
+                    (elevatorDrive.isBusy())) {
+               // if(digitalTouch.getState()){
+                 //   elevatorDrive.setPower(0);
+                //}
+                telemetry.addData("Path1", "Running to %7d,", newTarget);
+                telemetry.update();
             }
+
+            // Stop all motion;
+            leftDrive.setPower(0);
+            rightDrive.setPower(0);
             // Stop all motion;
             elevatorDrive.setPower(0);
 

@@ -30,10 +30,9 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 /**
@@ -62,130 +61,136 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Use Android Studios to Copy this Class, and Paste it into your team's code folder with a new name.
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
-
-@Autonomous(name="Auton prototype", group="Minibot")
-public class autonProto extends LinearOpMode {
+@Disabled
+@Autonomous(name="Minibot: Drive by Encoder", group="Minibot")
+public class elevatorTest extends LinearOpMode {
 
     /* Declare OpMode members. Since we aren't using the pushbot hardware we simply delcare two DC motors*/
     private DcMotor leftDrive = null;
     private DcMotor rightDrive = null;
-    private Servo dropServo = null;
-    private DcMotor intake = null;
     private ElapsedTime     runtime = new ElapsedTime();
 
-
-    static final double     COUNTS_PER_MOTOR_REV    = 1120;    // we have Core Hex motors, creating a different count value
-    static final double     DRIVE_GEAR_REDUCTION    = 0.75;     // we have no gears
+    static final double     COUNTS_PER_MOTOR_REV    = 288 ;    // we have Core Hex motors, creating a different count value
+    static final double     DRIVE_GEAR_REDUCTION    = 1.0 ;     // we have no gears
     static final double     WHEEL_DIAMETER_INCHES   = 3.54331 ;     // we congverted the 90mm diameter to inches
     static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
-                                                      (WHEEL_DIAMETER_INCHES * 3.14159265358979323);
-    static final double     DRIVE_SPEED             = 0.5; // higher power = faster traversal
+                                                      (WHEEL_DIAMETER_INCHES * 3.1415);
+    static final double     DRIVE_SPEED             = 0.8; // higher power = faster traversal
     static final double     TURN_SPEED              = 0.3; // higher power = faster traversal
 
     @Override
     public void runOpMode() {
-        leftDrive  = hardwareMap.get(DcMotor.class, "left_drive");
-        rightDrive = hardwareMap.get(DcMotor.class, "right_drive");
-        intake = hardwareMap.get (DcMotor.class, "intake");
-        dropServo = hardwareMap.get(Servo.class, "drop_Servo");
-        leftDrive.setDirection(DcMotor.Direction.REVERSE);
-        rightDrive.setDirection(DcMotor.Direction.FORWARD);
 
+        /*
+         * Initialize the drive system variables.
+         * The init() method of the hardware class does all the work here
+         */
+        leftDrive  = hardwareMap.get(DcMotor.class, "left_drive"); //nescessary for getting our hardware map
+        rightDrive = hardwareMap.get(DcMotor.class, "right_drive"); //because unlike pushbot we don't have a class to declare hardware
+        leftDrive.setDirection(DcMotor.Direction.FORWARD); // our right motor turns in the opposite direction so it has
+        rightDrive.setDirection(DcMotor.Direction.REVERSE); // to be reversed to create forward motion when told to go forward
 
+        // Send telemetry message to signify robot waiting;
+        telemetry.addData("Status", "Resetting Encoders");    //
+        telemetry.update();
+
+        leftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        // Send telemetry message to indicate successful Encoder reset
+        telemetry.addData("Path0",  "Starting at %7d :%7d",
+                          leftDrive.getCurrentPosition(),
+                          rightDrive.getCurrentPosition());
+        telemetry.update();
+
+        // Wait for the game to start (driver presses PLAY)
         waitForStart();
-        intake.setPower(-1);
-        sleep(1000);
-        dropServo.setPosition(0);
-        sleep(1000);
-        intake.setPower(0);
-        VuforiaOrientator();//ignore this, not implemented
-        encoderSequence("dumbDrive");
+
+        // Step through each leg of the path,
+        // Note: Reverse movement is obtained by setting a negative distance (not speed)
+        encoderDrive(DRIVE_SPEED,   34, 34, 4.0);
+        encoderDrive(TURN_SPEED,   8.96, -8.96 , 4.0);
+        encoderDrive(DRIVE_SPEED,   23, 23, 4.0);
+        encoderDrive(TURN_SPEED,   -8.96, 8.96 , 4.0);
+        encoderDrive(DRIVE_SPEED,   29, 29, 4.0);
+        encoderDrive(TURN_SPEED,   -8.96, 8.94 , 4.0);
+        encoderDrive(DRIVE_SPEED,   12.5, 12.5, 4.0);
+        encoderDrive(TURN_SPEED,   -8.90, 8.90, 4.0);
+        encoderDrive(DRIVE_SPEED,   13, 13, 4.0);
+        encoderDrive(TURN_SPEED,   8.92, -8.92, 4.0);
+        encoderDrive(DRIVE_SPEED,   12, 12, 4.0);
+        encoderDrive(TURN_SPEED,   8.91, -8.91 , 4.0);
+        encoderDrive(DRIVE_SPEED,   14, 14, 4.0);
+        encoderDrive(TURN_SPEED,   -8.91, 8.91, 4.0);
+        encoderDrive(DRIVE_SPEED,   20, 20, 4.0);
 
 
+        telemetry.addData("Path", "Complete");
+        telemetry.update();
     }
+
+    /*
+     *  Method to perfmorm a relative move, based on encoder counts.
+     *  Encoders are not reset as the move is based on the current position.
+     *  Move will stop if any of three conditions occur:
+     *  1) Move gets to the desired position
+     *  2) Move runs out of time
+     *  3) Driver stops the opmode running.
+     */
     public void encoderDrive(double speed,
                              double leftInches, double rightInches,
                              double timeoutS) {
         int newLeftTarget;
         int newRightTarget;
+
+        // Ensure that the opmode is still active
         if (opModeIsActive()) {
+
+            // Determine new target position, and pass to motor controller
             newLeftTarget = leftDrive.getCurrentPosition() + (int)(leftInches * COUNTS_PER_INCH);
             newRightTarget = rightDrive.getCurrentPosition() + (int)(rightInches * COUNTS_PER_INCH);
             leftDrive.setTargetPosition(newLeftTarget);
             rightDrive.setTargetPosition(newRightTarget);
+
+            // Turn On RUN_TO_POSITION
             leftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             rightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            // reset the timeout time and start motion.
             runtime.reset();
             leftDrive.setPower(Math.abs(speed));
             rightDrive.setPower(Math.abs(speed));
+
+            // keep looping while we are still active, and there is time left, and both motors are running.
+            // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
+            // its target position, the motion will stop.  This is "safer" in the event that the robot will
+            // always end the motion as soon as possible.
+            // However, if you require that BOTH motors have finished their moves before the robot continues
+            // onto the next step, use (isBusy() || isBusy()) in the loop test.
             while (opModeIsActive() &&
                    (runtime.seconds() < timeoutS) &&
                    (leftDrive.isBusy() && rightDrive.isBusy())) {
+
+                // Display it for the driver.
                 telemetry.addData("Path1",  "Running to %7d :%7d", newLeftTarget,  newRightTarget);
                 telemetry.addData("Path2",  "Running at %7d :%7d",
                                             leftDrive.getCurrentPosition(),
                                             rightDrive.getCurrentPosition());
                 telemetry.update();
             }
+
+            // Stop all motion;
             leftDrive.setPower(0);
             rightDrive.setPower(0);
+
+            // Turn off RUN_TO_POSITION
             leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        }
-    }
-    public void VuforiaOrientator() {
-        //this code will make the robot turn until it sees a picture, once it sees a picture, it will use Vuforia to orient it perpendicular to a wall
-        //and return a variable for the picture it is looking at.
-    }
-    public void encoderSequence(String robotSituation) {
-        switch (robotSituation) {//this takes the information given by VuforiaOrientator to determine how it has to dead reckon to it's goals.
-            case "dumbDrive":
-                encoderDrive (DRIVE_SPEED, 42,42,100000);
-                intake.setPower(-1.0);
-                sleep(5000);
-
-                break;
-            case "dumbDriveDepotBlue":
-                encoderDrive (DRIVE_SPEED, 42,42,10.0);
-                intake.setPower(-1.0);
-                sleep(4000);
-                intake.setPower(0);
-                encoderDrive (TURN_SPEED, 12, -12, 6);
-                encoderDrive(DRIVE_SPEED, 144,144,10);
-                break;
-            case "dumbDriveCraterRed":
-                encoderDrive(TURN_SPEED, -6,6,6);
-                encoderDrive(DRIVE_SPEED, 10, 10, 5);
-                encoderDrive(TURN_SPEED, -12,12,7);
-                encoderDrive(DRIVE_SPEED, 38, 38, 8);
-                intake.setPower(-1.0);
-                sleep(4000);
-                intake.setPower(0);
-                encoderDrive (TURN_SPEED, -12, 12, 6);
-                encoderDrive(DRIVE_SPEED, 144,144,10);
-                break;
-            case "dumbDriveDepotRed":
-            encoderDrive (DRIVE_SPEED, 28,28,10.0);
-            intake.setPower(-1.0);
-            sleep(20000);
-            intake.setPower(0);
-            encoderDrive (TURN_SPEED, -12, 12, 6);
-            encoderDrive(DRIVE_SPEED, 144,144,10);
-            break;
-            case "dumbDriveCraterBlue":
-                encoderDrive(TURN_SPEED, -6,6,6);
-                encoderDrive(DRIVE_SPEED, 10, 10, 5);
-                encoderDrive(TURN_SPEED, -12,12,7);
-                encoderDrive(DRIVE_SPEED, 38, 38, 8);
-                intake.setPower(-1.0);
-                sleep(4000);
-                intake.setPower(0);
-                encoderDrive (TURN_SPEED, -12, 12, 6);
-                encoderDrive(DRIVE_SPEED, 144,144,10);
-            default:
-                telemetry.addData("you are subreme idiom and did not input a case",robotSituation);
-                break;
+            //  sleep(250);   // optional pause after each move
         }
     }
 }

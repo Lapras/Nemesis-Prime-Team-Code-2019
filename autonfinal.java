@@ -85,7 +85,7 @@ public class autonfinal extends LinearOpMode {
     public static final float mmFTCFieldWidth = (72) * mmPerInch;       // the width of the FTC field (from the center point to the outer panels)
     public static final float mmTargetHeight = (6) * mmPerInch;          // the height of the center of the target image above the floor
     private DcMotor elevatorDrive = null;
-    private DigitalChannel digitalTouch = null;
+   // private DigitalChannel digitalTouch = null;
 
     // Select which camera you want use.  The FRONT camera is the one on the same side as the screen.
     // Valid choices are:  BACK or FRONT
@@ -95,7 +95,7 @@ public class autonfinal extends LinearOpMode {
     private boolean targetVisible = false;
     VuforiaLocalizer vuforia;
 
-    public void runOpMode(double speed) {
+    public void runOpMode() {
         BNO055IMU.Parameters parametersGyro = new BNO055IMU.Parameters();
         parametersGyro.angleUnit = BNO055IMU.AngleUnit.DEGREES;
         parametersGyro.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
@@ -109,12 +109,12 @@ public class autonfinal extends LinearOpMode {
         gyro.initialize(parametersGyro);
 
         elevatorDrive = hardwareMap.get(DcMotor.class, "elevator_drive");
-        digitalTouch = hardwareMap.get(DigitalChannel.class, "sensor_digital");
+       // digitalTouch = hardwareMap.get(DigitalChannel.class, "sensor_digital");
 
         leftDrive.setDirection(DcMotor.Direction.FORWARD); // our right motor turns in the opposite direction so it has
         rightDrive.setDirection(DcMotor.Direction.REVERSE); // to be reversed to create forward motion when told to go forward
         elevatorDrive.setDirection(DcMotor.Direction.REVERSE);
-        digitalTouch.setMode(DigitalChannel.Mode.INPUT);
+       // digitalTouch.setMode(DigitalChannel.Mode.INPUT);
 
         leftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -279,28 +279,19 @@ public class autonfinal extends LinearOpMode {
         for (VuforiaTrackable trackable : allTrackables) {
             ((VuforiaTrackableDefaultListener) trackable.getListener()).setPhoneInformation(phoneLocationOnRobot, parametersVuforia.cameraDirection);
         }
-        /** Wait for the game to begin */
-        telemetry.addData(">", "Press Play to start tracking");
-        telemetry.update();
-
-        waitForStart();
-        runtime.reset();
-        elevatorDrive(1, 10., 20);
-
-        /** Start tracking the data sets we care about. */
         targetsRoverRuckus.activate();
         if (ClassFactory.getInstance().canCreateTFObjectDetector()) {
             initTfod();
         } else {
             telemetry.addData("Sorry!", "This device is not compatible with TFOD");
         }
-        /** Wait for the game to begin */
-        telemetry.addData(">", "Press Play to start tracking");
-        telemetry.update();
+        telemetry.addData ("press", "play to start");
         waitForStart();
+        runtime.reset();
+        elevatorDrive(1, 10., 20);
         encoderDrive(DRIVE_SPEED, 254, 254, 10);
-        elevatorDrive(1, -10., 20);
         initVuforia();
+        /** Wait for the game to begin */
         if (opModeIsActive()) {
             /** Activate Tensor Flow Object Detection. */
             if (tfod != null) {
@@ -399,7 +390,6 @@ public class autonfinal extends LinearOpMode {
         }
 
 
-        speed = Range.clip(Math.abs(speed), 0.0, 1.0);
         VectorF translation = lastLocation.getTranslation();
         VectorF translationblueRover = blueRoverLocationOnField.getTranslation();
         VectorF translationredFootprint = redFootprintLocationOnField.getTranslation();
@@ -593,8 +583,6 @@ public class autonfinal extends LinearOpMode {
         }
 
     }
-    public void runOpMode() throws InterruptedException {
-    }
 
     public void encoderDrive(double speed,
                              double leftMM, double rightMM,
@@ -606,8 +594,8 @@ public class autonfinal extends LinearOpMode {
         if (opModeIsActive()) {
 
             // Determine new target position, and pass to motor controller
-            newLeftTarget = leftDrive.getCurrentPosition() + (int) (leftMM * COUNTS_PER_MM);
-            newRightTarget = rightDrive.getCurrentPosition() + (int) (rightMM * COUNTS_PER_MM);
+            newLeftTarget = leftDrive.getCurrentPosition() - (int) (leftMM * COUNTS_PER_MM);
+            newRightTarget = rightDrive.getCurrentPosition() - (int) (rightMM * COUNTS_PER_MM);
             leftDrive.setTargetPosition(newLeftTarget);
             rightDrive.setTargetPosition(newRightTarget);
 
@@ -826,9 +814,9 @@ public class autonfinal extends LinearOpMode {
             while (opModeIsActive() &&
                     (runtime.seconds() < timeoutS) &&
                     (elevatorDrive.isBusy())) {
-                if (digitalTouch.getState()) {
-                    elevatorDrive.setPower(0);
-                    }
+                //if (digitalTouch.getState()) {
+                  //  elevatorDrive.setPower(0);
+                    //}
             }
             // Stop all motion;
             elevatorDrive.setPower(0);

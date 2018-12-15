@@ -65,7 +65,7 @@ public class autonLessBasicCrater extends LinearOpMode {
         waitForStart();
         telemetry.addData ("heading:", getHeading());
         telemetry.update();
-        //elevatorDrive (1, 10, 8);
+        elevatorDrive (1, 10, 8);
         encoderDrive(DRIVE_SPEED, 200, 200, 2);
         gyroTurnTo(TURN_SPEED, 225);
         encoderDrive(DRIVE_SPEED, 1085, 1085, 5);
@@ -74,7 +74,7 @@ public class autonLessBasicCrater extends LinearOpMode {
         markerServo.setPosition(1);
         sleep(1500);
         encoderDrive(DRIVE_SPEED,  -2146.4, -2146.4, 10);
-        //elevatorDrive(1,-10,20);
+        elevatorDrive(1,-10,20);
         //gyroTurnTo(1, 315);
         //encoderDrive(1,2203.2, 2203.2, 10);
 

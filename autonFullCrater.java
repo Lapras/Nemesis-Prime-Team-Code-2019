@@ -56,7 +56,7 @@ public class autonFullCrater extends LinearOpMode {
             (WHEEL_DIAMETER_MM * 3.1415);
     static final double P_TURN_COEFF = 0.055;
     static final double HEADING_THRESHOLD = 0.5;
-    static final double DRIVE_SPEED = 0.5; // higher power = faster traversal
+    static final double DRIVE_SPEED = 0.3; // higher power = faster traversal
     static final double TURN_SPEED = 0.3;
     static final double SMALL_TURN = 0.75; // higher power = faster traversal
     static final double P_DRIVE_COEFF = 0.15;     // Larger is more responsive, but also less stable
@@ -292,8 +292,8 @@ public class autonFullCrater extends LinearOpMode {
                             tFodDone = true;
                             gyroTurn(TURN_SPEED, (angle-5));
                             sleep(500);
-                            encoderDrive(DRIVE_SPEED, 350, 350, 100);
-                            encoderDrive(DRIVE_SPEED, -325, -325, 100);
+                            encoderDrive(DRIVE_SPEED, 400, 400, 100);
+                            encoderDrive(DRIVE_SPEED, -400, -400, 100);
                             sleep(500);
                             gyroTurnTo(TURN_SPEED, 225);
                         }
@@ -320,11 +320,13 @@ public class autonFullCrater extends LinearOpMode {
         telemetry.addData("Tfod", "done");
         telemetry.update();
 
-        encoderDrive(DRIVE_SPEED, 350, 350, 5);
+        encoderDrive(DRIVE_SPEED, 400, 400, 500);
         gyroTurnTo (TURN_SPEED, 315);
+        encoderDrive(DRIVE_SPEED,  800, 800, 100);
         markerServo.setPosition(1);
         sleep(1500);
-        encoderDrive(DRIVE_SPEED,  -600, -600, 10);
+        encoderDrive(DRIVE_SPEED,  -800, -800, 100);
+
 
     }
 
@@ -333,13 +335,15 @@ public class autonFullCrater extends LinearOpMode {
                              double timeoutS) {
         int newLeftTarget;
         int newRightTarget;
+        double leftMultiplier = 1;
+        double rightMultiplier = 1;
 
         // Ensure that the opmode is still active
         if (opModeIsActive()) {
 
             // Determine new target position, and pass to motor controller
-            newLeftTarget = leftDrive.getCurrentPosition() - (int) (leftMM * COUNTS_PER_MM);
-            newRightTarget = rightDrive.getCurrentPosition() - (int) (rightMM * COUNTS_PER_MM);
+            newLeftTarget = leftDrive.getCurrentPosition() - (int) (leftMM * COUNTS_PER_MM * leftMultiplier);
+            newRightTarget = rightDrive.getCurrentPosition() - (int) (rightMM * COUNTS_PER_MM * rightMultiplier);
             leftDrive.setTargetPosition(newLeftTarget);
             rightDrive.setTargetPosition(newRightTarget);
 
@@ -458,13 +462,16 @@ public class autonFullCrater extends LinearOpMode {
             onTarget = true;
         } else {
             steer = getSteer(error, PCoeff);
-            double signMultiplier = 0;
+            /*double signMultiplier = 0;
             if (steer > 0) {
                 signMultiplier = 1;
             } else if (steer < 0) {
                 signMultiplier = -1;
             }
             rightSpeed = signMultiplier*Range.clip(Math.abs(speed*steer), 0.05, 1);
+            leftSpeed = -rightSpeed;
+            */
+            rightSpeed = speed*steer;
             leftSpeed = -rightSpeed;
         }
 
